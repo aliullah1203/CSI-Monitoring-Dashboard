@@ -186,12 +186,23 @@ Response:
 
 Statuses: `ACCEPTED` | `DUPLICATE` | `PENDING_REFERENCE` | `CONFLICT` | `REJECTED`
 
+**Quantity Validation (Change Request 01):**
+- COUNT quantity must be between **1 and 500 inclusive**
+- `COUNT 450 → ACCEPTED` | `COUNT 501 → REJECTED`
+- Rejected events are recorded in `submission_attempts` and do not increase production totals
+- Applies to both REST API submissions and MQTT challenge events
+
 ---
 
 ### GET `/api/state/all` — Full Dashboard State (single call)
 
 ```bash
 curl http://localhost:8080/api/state/all
+```
+
+With optional source filter:
+```bash
+curl "http://localhost:8080/api/state/all?source_id=LINE-01"
 ```
 
 Response:
@@ -203,7 +214,8 @@ Response:
     "pending_ack": 3,
     "unresolved": 1,
     "duplicates": 2,
-    "conflicts": 0
+    "conflicts": 0,
+    "rejected_submissions": 4
   },
   "pending": [...],
   "exceptions": [...]

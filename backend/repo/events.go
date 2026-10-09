@@ -71,8 +71,8 @@ func (r *EventsRepo) processSingle(tx *sql.Tx, ev EventInput, challengeID *strin
 		return EventResult{EventID: ev.EventID, Status: "REJECTED", Message: reason}
 	}
 	if ev.Type == "COUNT" {
-		if ev.Quantity == nil || *ev.Quantity <= 0 {
-			reason := "quantity must be a positive integer for COUNT"
+		if ev.Quantity == nil || *ev.Quantity < 1 || *ev.Quantity > 500 {
+			reason := "quantity must be between 1 and 500 for COUNT"
 			r.recordAttempt(tx, ev, "REJECTED", reason, rawJSON, challengeID)
 			return EventResult{EventID: ev.EventID, Status: "REJECTED", Message: reason}
 		}

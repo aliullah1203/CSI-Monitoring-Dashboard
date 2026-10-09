@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { getMqttStatus } from "../api/stateApi";
 
-export function useStateData() {
+export function useStateData(sourceFilter = "") {
   const [summary, setSummary] = useState(null);
   const [pending, setPending] = useState([]);
   const [exceptions, setExceptions] = useState([]);
@@ -10,8 +10,9 @@ export function useStateData() {
 
   const refresh = useCallback(async () => {
     try {
+      const qs = sourceFilter ? `?source_id=${encodeURIComponent(sourceFilter)}` : "";
       const [allRes, mqttRes] = await Promise.all([
-        fetch("/api/state/all").then((r) => r.json()),
+        fetch(`/api/state/all${qs}`).then((r) => r.json()),
         getMqttStatus(),
       ]);
       setSummary(allRes.summary);
@@ -23,9 +24,10 @@ export function useStateData() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [sourceFilter]);
 
   useEffect(() => {
+    setLoading(true);
     refresh();
     const id = setInterval(refresh, 5000);
     return () => clearInterval(id);

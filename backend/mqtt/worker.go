@@ -51,12 +51,13 @@ type EventResult struct {
 }
 
 type Summary struct {
-	NetTotal        int `json:"net_total"`
-	ProcessedEvents int `json:"processed_events"`
-	PendingAck      int `json:"pending_ack"`
-	Unresolved      int `json:"unresolved"`
-	Duplicates      int `json:"duplicates"`
-	Conflicts       int `json:"conflicts"`
+	NetTotal            int `json:"net_total"`
+	ProcessedEvents     int `json:"processed_events"`
+	PendingAck          int `json:"pending_ack"`
+	Unresolved          int `json:"unresolved"`
+	Duplicates          int `json:"duplicates"`
+	Conflicts           int `json:"conflicts"`
+	RejectedSubmissions int `json:"rejected_submissions"`
 }
 
 type Challenge struct {

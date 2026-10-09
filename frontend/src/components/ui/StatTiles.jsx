@@ -1,4 +1,4 @@
-import { TrendingUp, CheckCircle, Clock, AlertTriangle, Copy, Zap } from "lucide-react";
+import { TrendingUp, CheckCircle, Clock, AlertTriangle, Copy, Zap, XCircle } from "lucide-react";
 
 const tiles = [
   {
@@ -24,6 +24,10 @@ const tiles = [
   {
     key: "conflicts", label: "Conflicts", icon: Zap,
     color: "#fca5a5", bg: "#450a0a", border: "#991b1b", iconBg: "#b91c1c",
+  },
+  {
+    key: "rejected_submissions", label: "Rejected", icon: XCircle,
+    color: "#fb923c", bg: "#431407", border: "#9a3412", iconBg: "#7c2d12",
   },
 ];
 

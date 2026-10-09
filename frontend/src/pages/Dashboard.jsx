@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useStateData } from "../hooks/useStateData";
 import Navbar from "../components/layout/Navbar";
 import StatTiles from "../components/ui/StatTiles";
@@ -5,10 +6,15 @@ import EventForm from "../components/ui/EventForm";
 import PendingTable from "../components/ui/PendingTable";
 import ExceptionsTable from "../components/ui/ExceptionsTable";
 import MqttPanel from "../components/ui/MqttPanel";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Filter, X } from "lucide-react";
 
 export default function Dashboard() {
-  const { summary, pending, exceptions, mqtt, loading, refresh } = useStateData();
+  const [sourceFilter, setSourceFilter] = useState("");
+  const [inputVal, setInputVal] = useState("");
+  const { summary, pending, exceptions, mqtt, loading, refresh } = useStateData(sourceFilter);
+
+  const applyFilter = () => setSourceFilter(inputVal.trim());
+  const clearFilter = () => { setSourceFilter(""); setInputVal(""); };
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--bg-base)" }}>
@@ -26,6 +32,44 @@ export default function Dashboard() {
           }}>
             <RefreshCw size={10} /> REFRESH
           </button>
+        </div>
+
+        {/* Source Filter */}
+        <div style={{
+          display: "flex", alignItems: "center", gap: 8, marginBottom: 14,
+          background: "var(--bg-card)", border: "1px solid var(--border)",
+          borderRadius: 8, padding: "10px 14px",
+        }}>
+          <Filter size={13} color="var(--text-muted)" />
+          <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.08em", textTransform: "uppercase", whiteSpace: "nowrap" }}>
+            Source Filter
+          </span>
+          <input
+            value={inputVal}
+            onChange={(e) => setInputVal(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && applyFilter()}
+            placeholder="e.g. LINE-01"
+            style={{
+              flex: 1, background: "var(--bg-input)", border: "1px solid var(--border)",
+              borderRadius: 5, color: "var(--text-primary)", fontSize: 12,
+              padding: "5px 10px", outline: "none", maxWidth: 200,
+            }}
+          />
+          <button onClick={applyFilter} className="btn btn-primary" style={{ padding: "5px 14px", fontSize: 11 }}>Apply</button>
+          {sourceFilter && (
+            <button onClick={clearFilter} style={{
+              display: "flex", alignItems: "center", gap: 4, background: "none",
+              border: "1px solid var(--border)", borderRadius: 5, cursor: "pointer",
+              color: "var(--text-secondary)", fontSize: 11, padding: "5px 10px",
+            }}>
+              <X size={11} /> Clear
+            </button>
+          )}
+          {sourceFilter && (
+            <span style={{ fontSize: 11, color: "var(--blue)", fontFamily: "monospace" }}>
+              Viewing: {sourceFilter}
+            </span>
+          )}
         </div>
 
         <StatTiles summary={summary} loading={loading} />

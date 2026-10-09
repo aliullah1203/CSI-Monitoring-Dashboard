@@ -54,10 +54,21 @@ The system follows a clean layered architecture with three independent processes
 
 Every submission — REST or MQTT — runs through `repo/events.go: ProcessEvents()` inside a **single database transaction**. This guarantees atomicity: either all events in a batch commit or none do.
 
+### Production Quantity Validation (Change Request 01)
+
+Before any COUNT event is processed, quantity is validated:
+- Valid range: **1 to 500 inclusive**
+- If `quantity < 1` or `quantity > 500` → status `REJECTED`, recorded in `submission_attempts`, does **not** increment production totals
+- Applies equally to REST API submissions and MQTT challenge events
+- Example: `COUNT 450 → ACCEPTED` | `COUNT 501 → REJECTED`
+
 ### COUNT event flow
 
 ```
 Receive COUNT
+    │
+    ├─ Validate quantity: 1 ≤ qty ≤ 500
+    │   └─ Fails → REJECTED, record in submission_attempts, return
     │
     ├─ Insert into production_events (status=ACCEPTED)
     │   UNIQUE(source_id, event_id) → on conflict → DUPLICATE
@@ -180,7 +191,9 @@ CREATE TABLE mqtt_challenges (
 | Decision | Reason |
 |----------|--------|
 | `UNIQUE(source_id, event_id)` composite key | Single DB constraint handles all duplicate detection — no application-level check needed |
-| `submission_attempts` separate from `production_events` | Clean audit trail without polluting the event store; duplicates recorded without a row in events |
+| `submission_attempts` separate from `production_events` | Clean audit trail without polluting the event store; duplicates and rejections recorded without a row in events |
 | `PENDING_REFERENCE` status | Allows VOID to arrive before COUNT; event is held and auto-resolved when COUNT arrives — no data loss |
 | Single `ProcessEvents` transaction | All events in a batch either commit together or roll back — no partial state |
 | Neon serverless PostgreSQL | Scales to zero, no server management; connection pooling via built-in pooler endpoint |
+| Quantity cap (1–500) at repo layer | Validation lives in `processSingle()` before any DB write; applies to both REST and MQTT with no code duplication |
+| `rejected_submissions` from `submission_attempts` | Counted from persistent DB rows (not memory), filtered to `status='REJECTED'` only — excludes DUPLICATE, CONFLICT, PENDING_REFERENCE |

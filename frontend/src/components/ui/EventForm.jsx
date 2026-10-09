@@ -68,7 +68,7 @@ export default function EventForm({ onSuccess }) {
             <button key={t} type="button"
               onClick={() => set("type", t)}
               style={{
-                flex: 1, padding: "8px 0", borderRadius: 7, border: "none", cursor: "pointer",
+                flex: 1, padding: "8px 0", borderRadius: 7, cursor: "pointer",
                 fontWeight: 700, fontSize: 12, letterSpacing: "0.04em",
                 background: form.type === t
                   ? (t === "COUNT" ? "rgba(16,185,129,.15)" : "rgba(245,158,11,.15)")

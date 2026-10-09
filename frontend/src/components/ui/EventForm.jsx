@@ -1,6 +1,14 @@
 import { useState } from "react";
 import { submitEvents } from "../../api/eventsApi";
-import { Send } from "lucide-react";
+import { Send, ToggleLeft, ToggleRight, Loader2 } from "lucide-react";
+
+const badgeMap = {
+  ACCEPTED:          "badge-green",
+  DUPLICATE:         "badge-purple",
+  CONFLICT:          "badge-red",
+  REJECTED:          "badge-red",
+  PENDING_REFERENCE: "badge-yellow",
+};
 
 const defaultForm = {
   source_id: "LINE-01",
@@ -16,9 +24,8 @@ export default function EventForm({ onSuccess }) {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
+  const set = (k, v) => setForm((p) => ({ ...p, [k]: v }));
+  const isVoid = form.type === "VOID";
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -31,14 +38,15 @@ export default function EventForm({ onSuccess }) {
         type: form.type,
         event_time: form.event_time,
       };
-      if (form.type === "COUNT") {
-        payload.quantity = parseInt(form.quantity, 10);
-      } else {
-        payload.target_event_id = form.target_event_id;
-      }
+      if (!isVoid) payload.quantity = parseInt(form.quantity, 10);
+      else payload.target_event_id = form.target_event_id;
+
       const res = await submitEvents(payload);
       setResult(res);
-      onSuccess?.();
+      if (res.results?.[0]?.status === "ACCEPTED") {
+        setForm((p) => ({ ...p, event_id: "", quantity: "", target_event_id: "" }));
+        onSuccess?.();
+      }
     } catch (err) {
       setResult({ error: err.message });
     } finally {
@@ -46,85 +54,98 @@ export default function EventForm({ onSuccess }) {
     }
   };
 
-  const statusColor = (status) => {
-    const map = {
-      ACCEPTED: "text-green-400",
-      DUPLICATE: "text-purple-400",
-      CONFLICT: "text-red-400",
-      REJECTED: "text-red-400",
-      PENDING_REFERENCE: "text-yellow-400",
-    };
-    return map[status] || "text-gray-400";
-  };
-
   return (
-    <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-      <h2 className="text-white font-semibold mb-3 text-sm uppercase tracking-wide">
-        Submit Event — Factory Floor
-      </h2>
-      <form onSubmit={handleSubmit} className="space-y-3">
-        <div className="grid grid-cols-2 gap-3">
+    <div className="card">
+      <div style={{ marginBottom: 16 }}>
+        <div style={{ fontWeight: 700, fontSize: 13, color: "var(--text-primary)" }}>Submit Event</div>
+        <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>Factory floor manual entry</div>
+      </div>
+
+      <form onSubmit={handleSubmit}>
+        {/* Type toggle */}
+        <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
+          {["COUNT", "VOID"].map((t) => (
+            <button key={t} type="button"
+              onClick={() => set("type", t)}
+              style={{
+                flex: 1, padding: "8px 0", borderRadius: 7, border: "none", cursor: "pointer",
+                fontWeight: 700, fontSize: 12, letterSpacing: "0.04em",
+                background: form.type === t
+                  ? (t === "COUNT" ? "rgba(16,185,129,.15)" : "rgba(245,158,11,.15)")
+                  : "var(--bg-input)",
+                color: form.type === t
+                  ? (t === "COUNT" ? "#34d399" : "#fbbf24")
+                  : "var(--text-muted)",
+                border: form.type === t
+                  ? `1px solid ${t === "COUNT" ? "rgba(16,185,129,.3)" : "rgba(245,158,11,.3)"}`
+                  : "1px solid var(--border)",
+                transition: "all .15s",
+              }}>
+              {t}
+            </button>
+          ))}
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
           <div>
-            <label className="text-xs text-gray-400">Source ID</label>
-            <input name="source_id" value={form.source_id} onChange={handleChange}
-              className="w-full bg-gray-900 border border-gray-600 text-white rounded px-2 py-1.5 text-sm mt-1" />
+            <label style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 600, letterSpacing: "0.06em" }}>
+              SOURCE ID
+            </label>
+            <input className="input" style={{ marginTop: 4 }}
+              value={form.source_id} onChange={(e) => set("source_id", e.target.value)} />
           </div>
           <div>
-            <label className="text-xs text-gray-400">Event ID</label>
-            <input name="event_id" value={form.event_id} onChange={handleChange} required
-              className="w-full bg-gray-900 border border-gray-600 text-white rounded px-2 py-1.5 text-sm mt-1"
-              placeholder="EV-101" />
+            <label style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 600, letterSpacing: "0.06em" }}>
+              EVENT ID
+            </label>
+            <input className="input" style={{ marginTop: 4 }}
+              value={form.event_id} onChange={(e) => set("event_id", e.target.value)}
+              required placeholder="EV-101" />
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="text-xs text-gray-400">Type</label>
-            <select name="type" value={form.type} onChange={handleChange}
-              className="w-full bg-gray-900 border border-gray-600 text-white rounded px-2 py-1.5 text-sm mt-1">
-              <option value="COUNT">COUNT</option>
-              <option value="VOID">VOID</option>
-            </select>
-          </div>
-          {form.type === "COUNT" ? (
-            <div>
-              <label className="text-xs text-gray-400">Quantity</label>
-              <input name="quantity" type="number" min="1" value={form.quantity} onChange={handleChange} required
-                className="w-full bg-gray-900 border border-gray-600 text-white rounded px-2 py-1.5 text-sm mt-1"
-                placeholder="5" />
-            </div>
+        <div style={{ marginBottom: 10 }}>
+          <label style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 600, letterSpacing: "0.06em" }}>
+            {isVoid ? "TARGET EVENT ID" : "QUANTITY"}
+          </label>
+          {isVoid ? (
+            <input className="input" style={{ marginTop: 4 }}
+              value={form.target_event_id} onChange={(e) => set("target_event_id", e.target.value)}
+              required placeholder="EV-101" />
           ) : (
-            <div>
-              <label className="text-xs text-gray-400">Target Event ID</label>
-              <input name="target_event_id" value={form.target_event_id} onChange={handleChange} required
-                className="w-full bg-gray-900 border border-gray-600 text-white rounded px-2 py-1.5 text-sm mt-1"
-                placeholder="EV-101" />
-            </div>
+            <input className="input" style={{ marginTop: 4 }}
+              type="number" min="1" value={form.quantity}
+              onChange={(e) => set("quantity", e.target.value)}
+              required placeholder="5" />
           )}
         </div>
 
-        <div>
-          <label className="text-xs text-gray-400">Event Time</label>
-          <input name="event_time" value={form.event_time} onChange={handleChange}
-            className="w-full bg-gray-900 border border-gray-600 text-white rounded px-2 py-1.5 text-sm mt-1" />
+        <div style={{ marginBottom: 14 }}>
+          <label style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 600, letterSpacing: "0.06em" }}>
+            EVENT TIME
+          </label>
+          <input className="input" style={{ marginTop: 4 }}
+            value={form.event_time} onChange={(e) => set("event_time", e.target.value)} />
         </div>
 
-        <button type="submit" disabled={loading}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white px-4 py-2 rounded text-sm font-medium">
-          <Send size={14} /> {loading ? "Submitting..." : "Submit Event"}
+        <button type="submit" className="btn btn-primary" disabled={loading} style={{ width: "100%", justifyContent: "center" }}>
+          {loading
+            ? <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} />
+            : <Send size={14} />}
+          {loading ? "Submitting..." : `Submit ${form.type} Event`}
         </button>
       </form>
 
       {result && (
-        <div className="mt-3 bg-gray-900 rounded p-3">
+        <div style={{ marginTop: 12, background: "var(--bg-base)", borderRadius: 8, padding: "10px 12px" }}>
           {result.error ? (
-            <p className="text-red-400 text-xs">{result.error}</p>
+            <span style={{ color: "#f87171", fontSize: 12 }}>{result.error}</span>
           ) : (
             result.results?.map((r, i) => (
-              <div key={i} className="text-xs">
-                <span className="text-gray-400">{r.event_id}: </span>
-                <span className={`font-semibold ${statusColor(r.status)}`}>{r.status}</span>
-                {r.message && <span className="text-gray-500 ml-2">— {r.message}</span>}
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12 }}>
+                <span style={{ fontFamily: "monospace", color: "var(--text-muted)" }}>{r.event_id}</span>
+                <span className={`badge ${badgeMap[r.status] || "badge-gray"}`}>{r.status}</span>
+                {r.message && <span style={{ color: "var(--text-muted)", fontSize: 11 }}>— {r.message}</span>}
               </div>
             ))
           )}

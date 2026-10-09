@@ -1,12 +1,152 @@
 @import "tailwindcss";
 
-* {
-  box-sizing: border-box;
-}
+*, *::before, *::after { box-sizing: border-box; }
 
 body {
   margin: 0;
-  background: #0f1117;
-  color: #e2e8f0;
-  font-family: system-ui, -apple-system, sans-serif;
+  background: #0d1117;
+  color: #c9d1d9;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
+
+:root {
+  --bg-base:       #0d1117;
+  --bg-card:       #21262d;
+  --bg-card-hover: #2d333b;
+  --bg-input:      #161b22;
+  --border:        #444c56;
+  --border-bright: #6e7681;
+  --text-primary:  #f0f6fc;
+  --text-secondary:#cdd9e5;
+  --text-muted:    #768390;
+
+  --blue:   #58a6ff;
+  --green:  #3fb950;
+  --yellow: #d29922;
+  --orange: #e3692e;
+  --purple: #bc8cff;
+  --red:    #f85149;
+}
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--bg-base); }
+::-webkit-scrollbar-thumb { background: #30363d; border-radius: 3px; }
+
+.section-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.section-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px;
+}
+
+.data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.data-table th {
+  text-align: left;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+.data-table td {
+  padding: 10px 12px 10px 0;
+  border-bottom: 1px solid #21262d;
+  color: var(--text-secondary);
+  vertical-align: middle;
+}
+.data-table tbody tr:last-child td { border-bottom: none; }
+.data-table tbody tr:hover td { background: var(--bg-card-hover); }
+
+/* ── Badges ── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.badge-green  { background: #1a4429; color: #3fb950; border: 1px solid #2d6a3f; }
+.badge-red    { background: #3d1a1a; color: #f85149; border: 1px solid #6e2929; }
+.badge-yellow { background: #3d2e0a; color: #d29922; border: 1px solid #6e5010; }
+.badge-purple { background: #2d1f4e; color: #bc8cff; border: 1px solid #4e3580; }
+.badge-blue   { background: #1a2d4e; color: #58a6ff; border: 1px solid #2d4e80; }
+.badge-gray   { background: #21262d; color: #8b949e; border: 1px solid #30363d; }
+.badge-orange { background: #3d2410; color: #e3692e; border: 1px solid #6e4020; }
+
+/* ── Buttons ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 7px 16px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all .15s;
+  letter-spacing: 0.02em;
+}
+.btn:active { transform: scale(.97); }
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+.btn-primary { background: #1f6feb; border-color: #388bfd; color: #fff; }
+.btn-primary:hover:not(:disabled) { background: #388bfd; }
+.btn-success { background: #1a4429; border-color: #2d6a3f; color: #3fb950; }
+.btn-success:hover:not(:disabled) { background: #2d6a3f; color: #56d364; }
+
+/* ── Inputs ── */
+.input {
+  width: 100%;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 13px;
+  padding: 8px 12px;
+  outline: none;
+  transition: border-color .15s, box-shadow .15s;
+}
+.input:focus {
+  border-color: #388bfd;
+  box-shadow: 0 0 0 3px rgba(56,139,253,.1);
+}
+.input::placeholder { color: var(--text-muted); }
+
+/* ── Stat tile glow on alert ── */
+.tile-alert { border-color: #6e2929 !important; box-shadow: 0 0 0 1px rgba(248,81,73,.15); }
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .3; }
+}
+.pulse-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }

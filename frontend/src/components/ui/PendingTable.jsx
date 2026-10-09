@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ackEvents } from "../../api/ackApi";
-import { CheckSquare } from "lucide-react";
+import { CheckSquare, Square, Loader2 } from "lucide-react";
 
 export default function PendingTable({ events, onRefresh }) {
   const [selected, setSelected] = useState([]);
@@ -8,16 +8,14 @@ export default function PendingTable({ events, onRefresh }) {
   const [ackResult, setAckResult] = useState(null);
 
   const toggle = (id) =>
-    setSelected((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    );
-
+    setSelected((p) => p.includes(id) ? p.filter((x) => x !== id) : [...p, id]);
   const toggleAll = () =>
     setSelected(selected.length === events.length ? [] : events.map((e) => e.event_id));
 
   const handleAck = async () => {
     if (!selected.length) return;
     setLoading(true);
+    setAckResult(null);
     try {
       const res = await ackEvents(selected);
       setAckResult(res);
@@ -29,67 +27,80 @@ export default function PendingTable({ events, onRefresh }) {
   };
 
   return (
-    <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-white font-semibold text-sm uppercase tracking-wide">
-          Pending ACK — Supervisor
-        </h2>
-        <button onClick={handleAck} disabled={!selected.length || loading}
-          className="flex items-center gap-1.5 bg-green-700 hover:bg-green-600 disabled:opacity-40 text-white px-3 py-1.5 rounded text-xs font-medium">
-          <CheckSquare size={13} /> Acknowledge ({selected.length})
+    <div className="card" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div>
+          <div style={{ fontWeight: 700, fontSize: 13, color: "var(--text-primary)" }}>Pending ACK</div>
+          <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>
+            {events.length} event{events.length !== 1 ? "s" : ""} awaiting review
+          </div>
+        </div>
+        <button className="btn btn-success" onClick={handleAck} disabled={!selected.length || loading}>
+          {loading ? <Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} /> : <CheckSquare size={13} />}
+          Acknowledge {selected.length > 0 ? `(${selected.length})` : ""}
         </button>
       </div>
 
       {events.length === 0 ? (
-        <p className="text-gray-500 text-sm">No pending events.</p>
+        <div style={{ textAlign: "center", padding: "24px 0", color: "var(--text-muted)", fontSize: 13 }}>
+          ✓ No pending events
+        </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+        <div style={{ overflowX: "auto" }}>
+          <table className="data-table">
             <thead>
-              <tr className="text-gray-400 text-xs border-b border-gray-700">
-                <th className="pb-2 pr-3 text-left">
-                  <input type="checkbox"
-                    checked={selected.length === events.length && events.length > 0}
-                    onChange={toggleAll} className="accent-green-500" />
+              <tr>
+                <th style={{ width: 32 }}>
+                  <div onClick={toggleAll} style={{ cursor: "pointer", color: "var(--text-muted)", display: "flex" }}>
+                    {selected.length === events.length && events.length > 0
+                      ? <CheckSquare size={14} color="#3b82f6" />
+                      : <Square size={14} />}
+                  </div>
                 </th>
-                <th className="pb-2 pr-3 text-left">Event ID</th>
-                <th className="pb-2 pr-3 text-left">Source</th>
-                <th className="pb-2 pr-3 text-left">Type</th>
-                <th className="pb-2 pr-3 text-left">Qty</th>
-                <th className="pb-2 text-left">Time</th>
+                <th>Event ID</th>
+                <th>Source</th>
+                <th>Type</th>
+                <th>Qty</th>
+                <th>Event Time</th>
               </tr>
             </thead>
             <tbody>
-              {events.map((ev) => (
-                <tr key={ev.event_id} className="border-b border-gray-750 hover:bg-gray-750">
-                  <td className="py-1.5 pr-3">
-                    <input type="checkbox" checked={selected.includes(ev.event_id)}
-                      onChange={() => toggle(ev.event_id)} className="accent-green-500" />
-                  </td>
-                  <td className="py-1.5 pr-3 font-mono text-blue-300">{ev.event_id}</td>
-                  <td className="py-1.5 pr-3 text-gray-300">{ev.source_id}</td>
-                  <td className="py-1.5 pr-3">
-                    <span className={`text-xs font-medium ${ev.type === "COUNT" ? "text-green-400" : "text-orange-400"}`}>
-                      {ev.type}
-                    </span>
-                  </td>
-                  <td className="py-1.5 pr-3 text-gray-300">{ev.quantity ?? "—"}</td>
-                  <td className="py-1.5 text-gray-400 text-xs">
-                    {new Date(ev.event_time).toLocaleString()}
-                  </td>
-                </tr>
-              ))}
+              {events.map((ev) => {
+                const sel = selected.includes(ev.event_id);
+                return (
+                  <tr key={ev.event_id} onClick={() => toggle(ev.event_id)} style={{ cursor: "pointer" }}>
+                    <td>
+                      {sel
+                        ? <CheckSquare size={14} color="#3b82f6" />
+                        : <Square size={14} color="var(--text-muted)" />}
+                    </td>
+                    <td style={{ fontFamily: "monospace", color: "#60a5fa", fontSize: 12 }}>{ev.event_id}</td>
+                    <td style={{ color: "var(--text-secondary)" }}>{ev.source_id}</td>
+                    <td>
+                      <span className={`badge ${ev.type === "COUNT" ? "badge-green" : "badge-yellow"}`}>
+                        {ev.type}
+                      </span>
+                    </td>
+                    <td style={{ color: "var(--text-primary)", fontVariantNumeric: "tabular-nums" }}>
+                      {ev.quantity ?? "—"}
+                    </td>
+                    <td style={{ color: "var(--text-muted)", fontSize: 11 }}>
+                      {new Date(ev.event_time).toLocaleString()}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
       )}
 
-      {ackResult && (
-        <div className="mt-3 bg-gray-900 rounded p-2 text-xs space-y-1">
-          {ackResult.results?.map((r, i) => (
-            <div key={i}>
-              <span className="text-gray-400 font-mono">{r.event_id}: </span>
-              <span className={r.status === "ACKED" ? "text-green-400" : "text-yellow-400"}>{r.status}</span>
+      {ackResult?.results && (
+        <div style={{ background: "var(--bg-base)", borderRadius: 6, padding: "8px 12px", display: "flex", flexDirection: "column", gap: 3 }}>
+          {ackResult.results.map((r, i) => (
+            <div key={i} style={{ display: "flex", gap: 8, fontSize: 12 }}>
+              <span style={{ fontFamily: "monospace", color: "var(--text-muted)" }}>{r.event_id}</span>
+              <span className={`badge ${r.status === "ACKED" ? "badge-green" : "badge-yellow"}`}>{r.status}</span>
             </div>
           ))}
         </div>

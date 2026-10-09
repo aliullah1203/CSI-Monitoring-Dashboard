@@ -199,4 +199,61 @@ Backend validates it, deduplicates the challenge_id, runs all events through Pro
 
 ---
 
+## Change Request Session
+
+---
+
+**User:** *(shared photo of Change Request sheet from examiner)* now our examiner came and give us as a assessment part suddenly taking decision. so read this and need to change in this project. and update technical_explanation.md file and readme.md file.
+
+Change Request had 4 items:
+- **CR01** — Production Quantity Validation (backend): COUNT quantity must be 1–500; reject and record if > 500
+- **CR02** — Rejected Submissions in Summary (backend): add `rejected_submissions` field to GET /api/state/summary
+- **CR03** — Production Source Filter (frontend): add source ID filter bar to dashboard
+- **CR04** — Rejected Submissions Indicator (frontend): add 7th stat tile showing rejected count
+
+**Claude:** Implemented all 4 change requests without rebuilding the project:
+
+**Backend changes:**
+- `repo/events.go` — added `|| *ev.Quantity > 500` to the COUNT validation check. Quantity outside 1–500 returns REJECTED, records in `submission_attempts`, does not touch `production_events` or net_total.
+- `repo/state.go` — added `RejectedSubmissions int` to `Summary` struct and added subquery `(SELECT COUNT(*) FROM submission_attempts WHERE status='REJECTED' AND ($1='' OR source_id=$1)) AS rejected_submissions` to `GetSummary()`
+- `mqtt/worker.go` — added `RejectedSubmissions` field to MQTT package's `Summary` struct so it appears in challenge response state
+- `cmd/serve.go` — added `RejectedSubmissions` field mapping in mqttAdapter.GetSummary()
+
+**Frontend changes:**
+- `hooks/useStateData.js` — accepts `sourceFilter` param, appends `?source_id=` to the API URL, resets loading when filter changes
+- `pages/Dashboard.jsx` — added source filter bar with text input, Apply button, Clear button, and "Viewing: X" indicator. Filter state wired to useStateData hook.
+- `components/ui/StatTiles.jsx` — added 7th tile "Rejected" with orange colour scheme (`#fb923c`), XCircle icon, visually distinct from the success metrics
+
+Updated README.md and TECHNICAL_EXPLANATION.md with all change request details.
+
+---
+
+**User:** what is these errors? *(screenshot showing 500 errors in browser console and "Unexpected end of JSON input")*
+
+**Claude:** Two separate issues:
+1. **ECONNREFUSED** — backend was not running (user had stopped it). Fix: restart `go run main.go`.
+2. **Duplicate `border` key warning** in EventForm.jsx — `border: "none"` was set first, then `border: form.type === t ...` overwrote it in the same style object. Fixed by removing the first `border: "none"` key.
+
+Ran a curl test to confirm the backend API was working correctly and returning `rejected_submissions: 0` in the summary.
+
+---
+
+**User:** after searching these showing is that correct? *(screenshot showing source filter with "T1-EV-1791528776173828000" entered — all tiles showing 0)*
+
+**Claude:** Yes, correct behavior. `T1-EV-1791528776173828000` is an event ID, not a source ID. The filter filters by production line (source), not individual event IDs. No production line has that name so 0 results show. Should use `LINE-01` instead.
+
+---
+
+**User:** but after searching in pending ack list not showing that event. just show i can ack
+
+**Claude:** Correct behavior. The source filter filters by production line (source_id like LINE-01), not by event ID. When the typed value doesn't match any source, the pending list is empty. The Acknowledge button is always visible but disabled when no events are selected. Clear filter or type LINE-01 to see the 8 pending events.
+
+---
+
+**User:** update ai_usage.md file again and other md file if need.
+
+**Claude:** Updated AI_USAGE.md with the full change request session conversation.
+
+---
+
 *AI assistant: Claude Sonnet 4.6 (Anthropic) — accessed via Claude Code CLI*
